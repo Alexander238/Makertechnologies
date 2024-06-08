@@ -142,17 +142,17 @@ void setupMotors() {
 
 void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
   if (*sensor == LOW) {
-      *sensor_magnet = true;
-      Serial.println("Magnet detected, position set to 0");
+    *sensor_magnet = true;
+    Serial.println("Magnet detected, position set to 0");
 
-      stepper->setCurrentPosition(0);
-      adjustPosition(stepper, 10); // 18
-      rotateToNumber(stepper, 10);
-    } else {
-      // Keep the motor running
-      stepper->setSpeed(-1000);
-      stepper->runSpeed();
-    }
+    stepper->setCurrentPosition(0);
+    adjustPosition(stepper, 10);
+    // rotateToNumber(stepper, 10);
+  } else {
+    // Keep the motor running
+    stepper->setSpeed(-1500);
+    stepper->runSpeed();
+  }
 }
 
 float calcStep(float degree) {
