@@ -50,6 +50,8 @@ int timeInterval = 1000;
 // TODO or not: Overflow weil zu hoch gezählt -> vlt. reset einmal am Tag
 // Float Overflow nach 1.960716 x 10^31 Jahre, Int Overflow nach 123.75 Jahre
 
+// TODO: Stoppuhr, durch Modi auswählbar
+
 void setup(void) {
   Serial.begin(115200);
 
