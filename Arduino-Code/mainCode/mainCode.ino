@@ -65,11 +65,12 @@ void setup(void) {
 }
 
 void loop(void) {
-  /*
+
   if (!sensor_1_magnet) {
     sensor_1 = digitalRead(hallPin_1);
     calibrateMotor(&stepper1, &sensor_1, &sensor_1_magnet);
   }
+  /*
   else if(!sensor_2_magnet) {
     sensor_2 = digitalRead(hallPin_2);
     calibrateMotor(&stepper2, &sensor_2, &sensor_2_magnet);
@@ -78,10 +79,11 @@ void loop(void) {
     sensor_3 = digitalRead(hallPin_3);
     calibrateMotor(&stepper3, &sensor_3, &sensor_3_magnet);
   }
-  else*/ if(!sensor_4_magnet) {
+  else if(!sensor_4_magnet) {
     sensor_4 = digitalRead(hallPin_4);
     calibrateMotor(&stepper4, &sensor_4, &sensor_4_magnet);
   } 
+  */
   else {
     // rotateThroughAllFlaps();
     // readSerialInputToTurnFlaps();
@@ -90,10 +92,10 @@ void loop(void) {
       updateTime();
       timeLastChecked = millis();
     } else {
-      //rotateToNumber(&stepper1, motorNumbers["HoursLeft"]);
+      rotateToNumber(&stepper1, motorNumbers["HoursLeft"]);
       //rotateToNumber(&stepper2, motorNumbers["HoursRight"]);
       //rotateToNumber(&stepper3, motorNumbers["MinutesLeft"]);
-      rotateToNumber(&stepper4, motorNumbers["MinutesRight"]);
+      //rotateToNumber(&stepper4, motorNumbers["MinutesRight"]);
     }
   }
 }
