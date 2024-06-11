@@ -65,11 +65,11 @@ void setup(void) {
 }
 
 void loop(void) {
+  /*
   if (!sensor_1_magnet) {
     sensor_1 = digitalRead(hallPin_1);
     calibrateMotor(&stepper1, &sensor_1, &sensor_1_magnet);
-  } 
-  /*
+  }
   else if(!sensor_2_magnet) {
     sensor_2 = digitalRead(hallPin_2);
     calibrateMotor(&stepper2, &sensor_2, &sensor_2_magnet);
@@ -77,12 +77,11 @@ void loop(void) {
   else if(!sensor_3_magnet) {
     sensor_3 = digitalRead(hallPin_3);
     calibrateMotor(&stepper3, &sensor_3, &sensor_3_magnet);
-  } 
-  else if(!sensor_4_magnet) {
+  }
+  else*/ if(!sensor_4_magnet) {
     sensor_4 = digitalRead(hallPin_4);
     calibrateMotor(&stepper4, &sensor_4, &sensor_4_magnet);
   } 
-  */
   else {
     // rotateThroughAllFlaps();
     // readSerialInputToTurnFlaps();
@@ -91,12 +90,10 @@ void loop(void) {
       updateTime();
       timeLastChecked = millis();
     } else {
-      rotateToNumber(&stepper1, motorNumbers["MinutesRight"]);
-      /*
-      rotateToNumber(&stepper2, motorNumbers["HoursRight"]);
-      rotateToNumber(&stepper3, motorNumbers["MinutesLeft"]);
+      //rotateToNumber(&stepper1, motorNumbers["HoursLeft"]);
+      //rotateToNumber(&stepper2, motorNumbers["HoursRight"]);
+      //rotateToNumber(&stepper3, motorNumbers["MinutesLeft"]);
       rotateToNumber(&stepper4, motorNumbers["MinutesRight"]);
-      */
     }
   }
 }
@@ -146,13 +143,21 @@ void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
   if (*sensor == LOW) {
     *sensor_magnet = true;
     Serial.println("Magnet detected, position set to 0");
-
     stepper->setCurrentPosition(0);
-    adjustPosition(stepper, 10);
-    // rotateToNumber(stepper, 10);
+
+    if(stepper == &stepper4) {
+      adjustPosition(stepper, -10); // turn backwards, if stepper==stepper4
+    } else {
+      adjustPosition(stepper, 10);
+    }
   } else {
     // Keep the motor running
-    stepper->setSpeed(-1500);
+    if(stepper == &stepper4) {
+      stepper->setSpeed(1500); // turn backwards, if stepper==stepper4
+    } else {
+      stepper->setSpeed(-1500);
+    } 
+
     stepper->runSpeed();
   }
 }
@@ -168,6 +173,35 @@ void adjustPosition(AccelStepper *stepper, int degreeToAdjustBy) {
     stepper->run();
   }
   stepper->setCurrentPosition(0);
+}
+
+/*** Functions for time ***/
+
+void setTimezone(const char * timezone) {
+  Serial.print("Setting Timezone to ");
+  Serial.println(timezone);
+  setenv("TZ", timezone, 1);
+  tzset();
+}
+
+void updateTime(){
+  struct tm timeinfo;
+  char timeHour[3], timeMinute[3];
+
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+
+  Serial.println("Updating time");
+  
+  strftime(timeHour,3, "%H", &timeinfo);
+  strftime(timeMinute,3, "%M", &timeinfo);
+
+  motorNumbers["HoursLeft"] = timeHour[0] - '0';
+  motorNumbers["HoursRight"] = timeHour[1] - '0';
+  motorNumbers["MinutesLeft"] = timeMinute[0] - '0';
+  motorNumbers["MinutesRight"] = timeMinute[1] - '0';
 }
 
 /*** Functions to turn flaps ***/
@@ -187,7 +221,12 @@ void rotateToNumber(AccelStepper *stepper, int number) {
     lastDegree = degree;
     lastNumber = number;
 
-    stepper->moveTo(calcStep(degree));
+    if(stepper == &stepper4) {
+      stepper->moveTo(-calcStep(degree)); // turn backwards, if stepper==stepper4
+    } else {
+      stepper->moveTo(calcStep(degree));
+    }
+    
     while (stepper->distanceToGo() != 0) {
       stepper->run();
     }
@@ -217,29 +256,3 @@ void readSerialInputToTurnFlaps() {
   }
 }
 
-void setTimezone(const char * timezone) {
-  Serial.print("Setting Timezone to ");
-  Serial.println(timezone);
-  setenv("TZ", timezone, 1);
-  tzset();
-}
-
-void updateTime(){
-  struct tm timeinfo;
-  char timeHour[3], timeMinute[3];
-
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time");
-    return;
-  }
-
-  Serial.println("Updating time");
-  
-  strftime(timeHour,3, "%H", &timeinfo);
-  strftime(timeMinute,3, "%M", &timeinfo);
-
-  motorNumbers["HoursLeft"] = timeHour[0] - '0';
-  motorNumbers["HoursRight"] = timeHour[1] - '0';
-  motorNumbers["MinutesLeft"] = timeMinute[0] - '0';
-  motorNumbers["MinutesRight"] = timeMinute[1] - '0';
-}
