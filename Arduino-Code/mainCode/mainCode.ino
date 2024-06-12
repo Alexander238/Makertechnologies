@@ -4,8 +4,8 @@
 #include "time.h"
 
 /*** TIME-VARIABLES ***/
-const char* ssid     = "WLAN-Kabel Gast";
-const char* password = "sandman1998";
+const char* ssid     = "WLAN-Kabel Gast"; // FH-Kiel-IoT-NAT
+const char* password = "sandman1998"; // !FH-NAT-001!
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 0;
 const int   daylightOffset_sec = 3600;
@@ -41,8 +41,18 @@ std::map<String, int> motorNumbers = {
 
 int letters[11] = {6,7,8,9,10,0,1,2,3,4,5};
 int letterIndex = 0;
-float lastDegree = 0;
-int lastNumber = 5;
+std::map<String, float> lastDegree = {
+    {"HoursLeft", 0},
+    {"HoursRight", 0},
+    {"MinutesLeft", 0},
+    {"MinutesRight", 0}
+};
+std::map<String, int> lastNumber = {
+    {"HoursLeft", 5},
+    {"HoursRight", 5},
+    {"MinutesLeft", 5},
+    {"MinutesRight", 5}
+};
 float cumulativeDegree = 0;
 long timeLastChecked = 0;
 int timeInterval = 1000;
@@ -70,11 +80,12 @@ void loop(void) {
     sensor_1 = digitalRead(hallPin_1);
     calibrateMotor(&stepper1, &sensor_1, &sensor_1_magnet);
   }
-  /*
+  
   else if(!sensor_2_magnet) {
     sensor_2 = digitalRead(hallPin_2);
     calibrateMotor(&stepper2, &sensor_2, &sensor_2_magnet);
   }
+  /*
   else if(!sensor_3_magnet) {
     sensor_3 = digitalRead(hallPin_3);
     calibrateMotor(&stepper3, &sensor_3, &sensor_3_magnet);
@@ -85,6 +96,7 @@ void loop(void) {
   } 
   */
   else {
+    /* Alternative Funktionen */
     // rotateThroughAllFlaps();
     // readSerialInputToTurnFlaps();
 
@@ -92,10 +104,10 @@ void loop(void) {
       updateTime();
       timeLastChecked = millis();
     } else {
-      rotateToNumber(&stepper1, motorNumbers["HoursLeft"]);
-      //rotateToNumber(&stepper2, motorNumbers["HoursRight"]);
-      //rotateToNumber(&stepper3, motorNumbers["MinutesLeft"]);
-      //rotateToNumber(&stepper4, motorNumbers["MinutesRight"]);
+      rotateToNumber(&stepper1, "HoursLeft");
+      rotateToNumber(&stepper2, "HoursRight");
+      //rotateToNumber(&stepper3, "MinutesLeft");
+      //rotateToNumber(&stepper4, "MinutesRight");
     }
   }
 }
@@ -147,14 +159,14 @@ void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
     Serial.println("Magnet detected, position set to 0");
     stepper->setCurrentPosition(0);
 
-    if(stepper == &stepper4) {
+    if(stepper == &stepper4 || stepper == &stepper2) {
       adjustPosition(stepper, -10); // turn backwards, if stepper==stepper4
     } else {
       adjustPosition(stepper, 10);
     }
   } else {
     // Keep the motor running
-    if(stepper == &stepper4) {
+    if(stepper == &stepper4 || stepper == &stepper2) {
       stepper->setSpeed(1500); // turn backwards, if stepper==stepper4
     } else {
       stepper->setSpeed(-1500);
@@ -208,22 +220,22 @@ void updateTime(){
 
 /*** Functions to turn flaps ***/
 
-void rotateToNumber(AccelStepper *stepper, int number) {
+void rotateToNumber(AccelStepper *stepper, String position) {
+  int number = motorNumbers[position];
   if(number < 11) {
     Serial.print("Moving to: ");
     Serial.println(number);
 
-    int numberToTurnBy = number - lastNumber;
+    int numberToTurnBy = number - lastNumber[position];
     if(numberToTurnBy < 0) {
       numberToTurnBy = 11 + numberToTurnBy;
     }
 
-    float degree = lastDegree + (360.0 / 11 * numberToTurnBy);
+    float degree = lastDegree[position] + (360.0 / 11 * numberToTurnBy);
+    lastDegree[position] = degree;
+    lastNumber[position] = number;
 
-    lastDegree = degree;
-    lastNumber = number;
-
-    if(stepper == &stepper4) {
+    if(stepper == &stepper4 || stepper == &stepper2) {
       stepper->moveTo(-calcStep(degree)); // turn backwards, if stepper==stepper4
     } else {
       stepper->moveTo(calcStep(degree));
@@ -235,6 +247,7 @@ void rotateToNumber(AccelStepper *stepper, int number) {
   }
 }
 
+/*
 void rotateThroughAllFlaps() {
   while(letterIndex < 11) {
     rotateToNumber(&stepper1, letterIndex);
@@ -257,4 +270,5 @@ void readSerialInputToTurnFlaps() {
     }
   }
 }
+*/
 
