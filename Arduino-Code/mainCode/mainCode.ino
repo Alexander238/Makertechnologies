@@ -4,20 +4,20 @@
 #include "time.h"
 
 /*** TIME-VARIABLES ***/
-const char* ssid     = "WLAN-Kabel Gast"; // FH-Kiel-IoT-NAT
-const char* password = "sandman1998"; // !FH-NAT-001!
-const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 0;
-const int   daylightOffset_sec = 3600;
-const char* berlinTimezone = "CET-1CEST,M3.5.0,M10.5.0/3";
+const char *ssid = "WLAN-Kabel Gast";  // FH-Kiel-IoT-NAT
+const char *password = "sandman1998";  // !FH-NAT-001!
+const char *ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 0;
+const int daylightOffset_sec = 3600;
+const char *berlinTimezone = "CET-1CEST,M3.5.0,M10.5.0/3";
 
 /*** MOTOR-VARIABLES ***/
 const float fullRevolution = 4097.0;
 const float SteppDegree = fullRevolution / 360;
-AccelStepper stepper1(AccelStepper::HALF4WIRE, 23, 21, 22, 19);   // Pins IN1-IN3-IN2-IN4
-AccelStepper stepper2(AccelStepper::HALF4WIRE, 18, 17, 5, 16);    // Pins IN1-IN3-IN2-IN4
-AccelStepper stepper3(AccelStepper::HALF4WIRE, 4, 2, 0, 15);      // Pins IN1-IN3-IN2-IN4
-AccelStepper stepper4(AccelStepper::HALF4WIRE, 27, 12, 14, 13);   // Pins IN1-IN3-IN2-IN4
+AccelStepper stepper1(AccelStepper::HALF4WIRE, 23, 21, 22, 19);  // Pins IN1-IN3-IN2-IN4
+AccelStepper stepper2(AccelStepper::HALF4WIRE, 18, 17, 5, 16);   // Pins IN1-IN3-IN2-IN4
+AccelStepper stepper3(AccelStepper::HALF4WIRE, 4, 2, 0, 15);     // Pins IN1-IN3-IN2-IN4
+AccelStepper stepper4(AccelStepper::HALF4WIRE, 27, 12, 14, 13);  // Pins IN1-IN3-IN2-IN4
 
 /*** SENSOR-VARIABLES ***/
 float sensor_1, sensor_2, sensor_3, sensor_4;
@@ -33,29 +33,30 @@ int acceleration = 500;
 int speed = -800;
 int startPosition = 0;
 std::map<String, int> motorNumbers = {
-    {"HoursLeft", 0},
-    {"HoursRight", 0},
-    {"MinutesLeft", 0},
-    {"MinutesRight", 0}
+  { "HoursLeft", 0 },
+  { "HoursRight", 0 },
+  { "MinutesLeft", 0 },
+  { "MinutesRight", 0 }
 };
 
-int letters[11] = {6,7,8,9,10,0,1,2,3,4,5};
+int letters[11] = { 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5 };
 int letterIndex = 0;
 std::map<String, float> lastDegree = {
-    {"HoursLeft", 0},
-    {"HoursRight", 0},
-    {"MinutesLeft", 0},
-    {"MinutesRight", 0}
+  { "HoursLeft", 0 },
+  { "HoursRight", 0 },
+  { "MinutesLeft", 0 },
+  { "MinutesRight", 0 }
 };
 std::map<String, int> lastNumber = {
-    {"HoursLeft", 5},
-    {"HoursRight", 5},
-    {"MinutesLeft", 5},
-    {"MinutesRight", 5}
+  { "HoursLeft", 5 },
+  { "HoursRight", 5 },
+  { "MinutesLeft", 5 },
+  { "MinutesRight", 5 }
 };
 float cumulativeDegree = 0;
 long timeLastChecked = 0;
-int timeInterval = 1000;
+int timeInterval = 5000;
+AccelStepper *reversedSteppers[] = { &stepper2, &stepper4 };
 
 // TODO or not: Overflow weil zu hoch gezählt -> vlt. reset einmal am Tag
 // Float Overflow nach 1.960716 x 10^31 Jahre, Int Overflow nach 123.75 Jahre
@@ -80,11 +81,13 @@ void loop(void) {
     sensor_1 = digitalRead(hallPin_1);
     calibrateMotor(&stepper1, &sensor_1, &sensor_1_magnet);
   }
-  
-  else if(!sensor_2_magnet) {
+
+  /*
+  else if (!sensor_2_magnet) {
     sensor_2 = digitalRead(hallPin_2);
     calibrateMotor(&stepper2, &sensor_2, &sensor_2_magnet);
   }
+  */
   /*
   else if(!sensor_3_magnet) {
     sensor_3 = digitalRead(hallPin_3);
@@ -100,12 +103,13 @@ void loop(void) {
     // rotateThroughAllFlaps();
     // readSerialInputToTurnFlaps();
 
-    if(millis() - timeLastChecked > timeInterval) {
+    if (millis() - timeLastChecked > timeInterval) {
       updateTime();
       timeLastChecked = millis();
     } else {
-      rotateToNumber(&stepper1, "HoursLeft");
-      rotateToNumber(&stepper2, "HoursRight");
+      rotatingFlaps(&stepper1, 500);
+      //rotateToNumber(&stepper1, "HoursLeft");
+      //rotateToNumber(&stepper2, "HoursRight");
       //rotateToNumber(&stepper3, "MinutesLeft");
       //rotateToNumber(&stepper4, "MinutesRight");
     }
@@ -124,7 +128,7 @@ void setupWifi() {
   }
   Serial.println("");
   Serial.println("WiFi connected.");
-  
+
   // Init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   setTimezone(berlinTimezone);
@@ -132,25 +136,25 @@ void setupWifi() {
 }
 
 void setupMotors() {
-  stepper1.setMaxSpeed(maxSpeed);    
-  stepper1.setAcceleration(acceleration);   
-  stepper1.setSpeed(speed);          
-  stepper1.setCurrentPosition(startPosition);  
+  stepper1.setMaxSpeed(maxSpeed);
+  stepper1.setAcceleration(acceleration);
+  stepper1.setSpeed(speed);
+  stepper1.setCurrentPosition(startPosition);
 
-  stepper2.setMaxSpeed(maxSpeed);    
-  stepper2.setAcceleration(acceleration);   
-  stepper2.setSpeed(speed);          
-  stepper2.setCurrentPosition(startPosition);  
+  stepper2.setMaxSpeed(maxSpeed);
+  stepper2.setAcceleration(acceleration);
+  stepper2.setSpeed(speed);
+  stepper2.setCurrentPosition(startPosition);
 
-  stepper3.setMaxSpeed(maxSpeed);    
-  stepper3.setAcceleration(acceleration);   
-  stepper3.setSpeed(speed);          
-  stepper3.setCurrentPosition(startPosition);  
+  stepper3.setMaxSpeed(maxSpeed);
+  stepper3.setAcceleration(acceleration);
+  stepper3.setSpeed(speed);
+  stepper3.setCurrentPosition(startPosition);
 
-  stepper4.setMaxSpeed(maxSpeed);    
-  stepper4.setAcceleration(acceleration);   
-  stepper4.setSpeed(speed);          
-  stepper4.setCurrentPosition(startPosition);  
+  stepper4.setMaxSpeed(maxSpeed);
+  stepper4.setAcceleration(acceleration);
+  stepper4.setSpeed(speed);
+  stepper4.setCurrentPosition(startPosition);
 }
 
 void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
@@ -159,18 +163,18 @@ void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
     Serial.println("Magnet detected, position set to 0");
     stepper->setCurrentPosition(0);
 
-    if(stepper == &stepper4 || stepper == &stepper2) {
-      adjustPosition(stepper, -10); // turn backwards, if stepper==stepper4
+    if (isStepperInList(stepper)) {
+      adjustPosition(stepper, -10);  // turn backwards, if stepper==stepper4
     } else {
       adjustPosition(stepper, 10);
     }
   } else {
     // Keep the motor running
-    if(stepper == &stepper4 || stepper == &stepper2) {
-      stepper->setSpeed(1500); // turn backwards, if stepper==stepper4
+    if (isStepperInList(stepper)) {
+      stepper->setSpeed(1500);  // turn backwards, if stepper==stepper4
     } else {
       stepper->setSpeed(-1500);
-    } 
+    }
 
     stepper->runSpeed();
   }
@@ -189,28 +193,38 @@ void adjustPosition(AccelStepper *stepper, int degreeToAdjustBy) {
   stepper->setCurrentPosition(0);
 }
 
+bool isStepperInList(AccelStepper *stepper) {
+  for (int i = 0; i < sizeof(reversedSteppers) / sizeof(reversedSteppers[0]); i++) {
+    if (stepper == reversedSteppers[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
 /*** Functions for time ***/
 
-void setTimezone(const char * timezone) {
+void setTimezone(const char *timezone) {
   Serial.print("Setting Timezone to ");
   Serial.println(timezone);
   setenv("TZ", timezone, 1);
   tzset();
 }
 
-void updateTime(){
+void updateTime() {
   struct tm timeinfo;
   char timeHour[3], timeMinute[3];
 
-  if(!getLocalTime(&timeinfo)){
+  if (!getLocalTime(&timeinfo)) {
     Serial.println("Failed to obtain time");
     return;
   }
 
   Serial.println("Updating time");
-  
-  strftime(timeHour,3, "%H", &timeinfo);
-  strftime(timeMinute,3, "%M", &timeinfo);
+
+  strftime(timeHour, 3, "%H", &timeinfo);
+  strftime(timeMinute, 3, "%M", &timeinfo);
 
   motorNumbers["HoursLeft"] = timeHour[0] - '0';
   motorNumbers["HoursRight"] = timeHour[1] - '0';
@@ -222,12 +236,12 @@ void updateTime(){
 
 void rotateToNumber(AccelStepper *stepper, String position) {
   int number = motorNumbers[position];
-  if(number < 11) {
+  if (number < 11) {
     Serial.print("Moving to: ");
     Serial.println(number);
 
     int numberToTurnBy = number - lastNumber[position];
-    if(numberToTurnBy < 0) {
+    if (numberToTurnBy < 0) {
       numberToTurnBy = 11 + numberToTurnBy;
     }
 
@@ -235,16 +249,26 @@ void rotateToNumber(AccelStepper *stepper, String position) {
     lastDegree[position] = degree;
     lastNumber[position] = number;
 
-    if(stepper == &stepper4 || stepper == &stepper2) {
-      stepper->moveTo(-calcStep(degree)); // turn backwards, if stepper==stepper4
+    if (isStepperInList(stepper)) {
+      stepper->moveTo(-calcStep(degree));  // turn backwards, if stepper==stepper4
     } else {
       stepper->moveTo(calcStep(degree));
     }
-    
+
     while (stepper->distanceToGo() != 0) {
       stepper->run();
     }
   }
+}
+
+void rotatingFlaps(AccelStepper *stepper, int speed) {
+  if (isStepperInList(stepper)) {
+      stepper->setSpeed(speed);  // turn backwards, if stepper==stepper4
+    } else {
+      stepper->setSpeed(-speed);
+    }
+
+    stepper->runSpeed();
 }
 
 /*
@@ -271,4 +295,3 @@ void readSerialInputToTurnFlaps() {
   }
 }
 */
-
