@@ -10,6 +10,15 @@ int led_1 = 15;
 int led_2 = 2;
 int led_3 = 0;
 
+/*** BUTTONS-VARIABLES ***/
+int buttonPin = 32;
+int buttonValue = 0;
+
+int powerButton = 0;
+int modeButton = 235;
+int startButton = 535;
+int tolerance = 10;
+
 void setup() {
   Serial.begin(9600);
 

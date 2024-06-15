@@ -27,10 +27,22 @@ const int hallPin_2 = 34;
 const int hallPin_3 = 39;
 const int hallPin_4 = 36;
 
+/*** BUTTONS-VARIABLES ***/
+int buttonPin = 32;
+int buttonValue = 0;
+
+int powerButton = 2850;
+int modeButton = 720;
+int startButton = 1860;
+int tolerance = 100;
+
+/*** LED ***/
+int led1 = 33;
+
 /*** GENERAL-VARIABLES ***/
 int maxSpeed = 1000;
 int acceleration = 500;
-int speed = -800;
+int speed = -400;
 int startPosition = 0;
 std::map<String, int> motorNumbers = {
   { "HoursLeft", 0 },
@@ -56,7 +68,7 @@ std::map<String, int> lastNumber = {
 float cumulativeDegree = 0;
 long timeLastChecked = 0;
 int timeInterval = 5000;
-AccelStepper *reversedSteppers[] = { &stepper2, &stepper4 };
+AccelStepper *reversedSteppers[] = { &stepper2 };
 
 // TODO or not: Overflow weil zu hoch gezählt -> vlt. reset einmal am Tag
 // Float Overflow nach 1.960716 x 10^31 Jahre, Int Overflow nach 123.75 Jahre
@@ -71,24 +83,34 @@ void setup(void) {
   pinMode(hallPin_3, INPUT);
   pinMode(hallPin_4, INPUT);
 
+  pinMode(led1, OUTPUT);
+
   setupMotors();
   setupWifi();
 }
 
 void loop(void) {
+  buttonValue = analogRead(buttonPin);
+  
+  int pressedButton = buttonPressed();
+
+  if (pressedButton == 1) {
+    digitalWrite(led1, HIGH);
+  } else if (pressedButton == 3) {
+    digitalWrite(led1, HIGH);
+  }
+  else {
+    digitalWrite(led1, LOW);
+  }
 
   if (!sensor_1_magnet) {
     sensor_1 = digitalRead(hallPin_1);
     calibrateMotor(&stepper1, &sensor_1, &sensor_1_magnet);
   }
-
-  /*
   else if (!sensor_2_magnet) {
     sensor_2 = digitalRead(hallPin_2);
     calibrateMotor(&stepper2, &sensor_2, &sensor_2_magnet);
   }
-  */
-  /*
   else if(!sensor_3_magnet) {
     sensor_3 = digitalRead(hallPin_3);
     calibrateMotor(&stepper3, &sensor_3, &sensor_3_magnet);
@@ -97,7 +119,6 @@ void loop(void) {
     sensor_4 = digitalRead(hallPin_4);
     calibrateMotor(&stepper4, &sensor_4, &sensor_4_magnet);
   } 
-  */
   else {
     /* Alternative Funktionen */
     // rotateThroughAllFlaps();
@@ -107,11 +128,12 @@ void loop(void) {
       updateTime();
       timeLastChecked = millis();
     } else {
-      rotatingFlaps(&stepper1, 500);
-      //rotateToNumber(&stepper1, "HoursLeft");
-      //rotateToNumber(&stepper2, "HoursRight");
-      //rotateToNumber(&stepper3, "MinutesLeft");
-      //rotateToNumber(&stepper4, "MinutesRight");
+      //rotatingFlaps(&stepper1, -speed);
+      rotateToNumber(&stepper4, "MinutesRight");
+      rotateToNumber(&stepper3, "MinutesLeft");
+      rotateToNumber(&stepper2, "HoursRight");
+      rotateToNumber(&stepper1, "HoursLeft");
+
     }
   }
 }
@@ -157,6 +179,13 @@ void setupMotors() {
   stepper4.setCurrentPosition(startPosition);
 }
 
+int buttonPressed() {
+  if(buttonValue <= powerButton + tolerance && buttonValue >= powerButton - tolerance) return 1;
+  if(buttonValue <= modeButton + tolerance && buttonValue >= modeButton - tolerance) return 2;
+  if(buttonValue <= startButton + tolerance && buttonValue >= startButton - tolerance) return 3;
+  return -1;
+}
+
 void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
   if (*sensor == LOW) {
     *sensor_magnet = true;
@@ -164,16 +193,18 @@ void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
     stepper->setCurrentPosition(0);
 
     if (isStepperInList(stepper)) {
-      adjustPosition(stepper, -10);  // turn backwards, if stepper==stepper4
+      adjustPosition(stepper, -33);  // turn backwards, if stepper==stepper4
+    } else if (stepper == &stepper4) {
+      adjustPosition(stepper, 30);
     } else {
-      adjustPosition(stepper, 10);
-    }
+      adjustPosition(stepper, 15);
+    } 
   } else {
     // Keep the motor running
     if (isStepperInList(stepper)) {
-      stepper->setSpeed(1500);  // turn backwards, if stepper==stepper4
+      stepper->setSpeed(-speed * 4);  // turn backwards, if stepper==stepper4
     } else {
-      stepper->setSpeed(-1500);
+      stepper->setSpeed(speed * 4);
     }
 
     stepper->runSpeed();
