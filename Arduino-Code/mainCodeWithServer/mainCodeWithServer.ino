@@ -119,6 +119,8 @@ void setup(void) {
   server.on("/update", handleUpdateTimezone);
   
   server.begin();
+
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 }
 
 void loop(void) {
@@ -199,8 +201,56 @@ void setupMotors() {
 int buttonPressed() {
   if(buttonValue <= powerButton + tolerance && buttonValue >= powerButton - tolerance) return 1;
   if(buttonValue <= modeButton + tolerance && buttonValue >= modeButton - tolerance) return 2;
-  if(buttonValue <= startButton + tolerance && button
+  if(buttonValue <= startButton + tolerance && buttonValue >= startButton - tolerance) return 3;
+  return -1;
+}
 
+void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
+  if (*sensor == LOW) {
+    *sensor_magnet = true;
+    Serial.println("Magnet detected, position set to 0");
+    stepper->setCurrentPosition(0);
+
+    if (isStepperInList(stepper)) {
+      adjustPosition(stepper, -33);  // turn backwards, if stepper==stepper4
+    } else if (stepper == &stepper4) {
+      adjustPosition(stepper, 30);
+    } else {
+      adjustPosition(stepper, 15);
+    } 
+  } else {
+    // Keep the motor running
+    if (isStepperInList(stepper)) {
+      stepper->setSpeed(-speed * 4);  // turn backwards, if stepper==stepper4
+    } else {
+      stepper->setSpeed(speed * 4);
+    }
+
+    stepper->runSpeed();
+  }
+}
+
+float calcStep(float degree) {
+  float direction = -1;  // -1 => clockwise, 1 => counterclockwise
+  return degree * SteppDegree * direction;
+}
+
+void adjustPosition(AccelStepper *stepper, int degreeToAdjustBy) {
+  stepper->moveTo(calcStep(degreeToAdjustBy));
+  while (stepper->distanceToGo() != 0) {
+    stepper->run();
+  }
+  stepper->setCurrentPosition(0);
+}
+
+bool isStepperInList(AccelStepper *stepper) {
+  for (int i = 0; i < sizeof(reversedSteppers) / sizeof(reversedSteppers[0]); i++) {
+    if (stepper == reversedSteppers[i]) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /*** WEB-SERVER ***/
 // Replaces placeholder "TIMEZONE" with the current timezone from the code.
@@ -226,3 +276,96 @@ void handleUpdateTimezone() {
   }
   handleRoot();
 }
+
+/*** Functions for time ***/
+
+void setTimezone(const char *timezone) {
+  Serial.print("Setting Timezone to ");
+  Serial.println(timezone);
+  setenv("TZ", timezone, 1);
+  tzset();
+}
+
+void updateTime() {
+  struct tm timeinfo;
+  char timeHour[3], timeMinute[3];
+
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time");
+    return;
+  }
+
+  Serial.println("Updating time");
+
+  strftime(timeHour, 3, "%H", &timeinfo);
+  strftime(timeMinute, 3, "%M", &timeinfo);
+
+  motorNumbers["HoursLeft"] = timeHour[0] - '0';
+  motorNumbers["HoursRight"] = timeHour[1] - '0';
+  motorNumbers["MinutesLeft"] = timeMinute[0] - '0';
+  motorNumbers["MinutesRight"] = timeMinute[1] - '0';
+}
+
+/*** Functions to turn flaps ***/
+
+void rotateToNumber(AccelStepper *stepper, String position) {
+  int number = motorNumbers[position];
+  if (number < 11) {
+    Serial.print("Moving to: ");
+    Serial.println(number);
+
+    int numberToTurnBy = number - lastNumber[position];
+    if (numberToTurnBy < 0) {
+      numberToTurnBy = 11 + numberToTurnBy;
+    }
+
+    float degree = lastDegree[position] + (360.0 / 11 * numberToTurnBy);
+    lastDegree[position] = degree;
+    lastNumber[position] = number;
+
+    if (isStepperInList(stepper)) {
+      stepper->moveTo(-calcStep(degree));  // turn backwards, if stepper==stepper4
+    } else {
+      stepper->moveTo(calcStep(degree));
+    }
+
+    while (stepper->distanceToGo() != 0) {
+      stepper->run();
+    }
+  }
+}
+
+void rotatingFlaps(AccelStepper *stepper, int speed) {
+  if (isStepperInList(stepper)) {
+      stepper->setSpeed(speed);  // turn backwards, if stepper==stepper4
+    } else {
+      stepper->setSpeed(-speed);
+    }
+
+    stepper->runSpeed();
+}
+
+/*
+void rotateThroughAllFlaps() {
+  while(letterIndex < 11) {
+    rotateToNumber(&stepper1, letterIndex);
+    
+    letterIndex++;
+    delay(1000);
+  }
+  
+  // while(1) {} // Stop motor from moving.
+}
+
+void readSerialInputToTurnFlaps() {
+  if (Serial.available() > 0) {
+    int input = Serial.read();
+    if(input >= 48 && input <= 57) {
+      rotateToNumber(&stepper1, input-48);
+    }
+    else if(input == 32) {
+      rotateToNumber(&stepper1, 10);
+    }
+  }
+}
+*/
