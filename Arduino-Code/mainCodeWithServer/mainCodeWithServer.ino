@@ -115,7 +115,7 @@ void handleRoot() {
 void handleUpdateTimezone() {
   if (server.hasArg("timezone")) {
     String newTimezone = server.arg("timezone");
-    newTimezone.toCharArray(currentTimezone, 50);
+    newTimezone.toCharArray(currentTimezone, 100);
     setTimezone(currentTimezone);
     updateTime();
   }
