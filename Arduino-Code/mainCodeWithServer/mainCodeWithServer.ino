@@ -96,32 +96,6 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-// Replaces placeholder with the current timezone
-String processor(const String& var) {
-  if (var == "TIMEZONE") {
-    return String(currentTimezone);
-  }
-  return String();
-}
-
-// Handle the root route
-void handleRoot() {
-  String htmlPage = HTML_PAGE;
-  htmlPage.replace("%TIMEZONE%", currentTimezone);
-  server.send(200, "text/html", htmlPage);
-}
-
-// Handle form submission to update timezone
-void handleUpdateTimezone() {
-  if (server.hasArg("timezone")) {
-    String newTimezone = server.arg("timezone");
-    newTimezone.toCharArray(currentTimezone, 100);
-    setTimezone(currentTimezone);
-    updateTime();
-  }
-  handleRoot();
-}
-
 // TODO or not: Overflow weil zu hoch gezählt -> vlt. reset einmal am Tag
 // Float Overflow nach 1.960716 x 10^31 Jahre, Int Overflow nach 123.75 Jahre
 
@@ -140,11 +114,10 @@ void setup(void) {
   setupMotors();
   setupAccessPoint();
   
-  // Define routes for the web server
+  // Define two routes
   server.on("/", handleRoot);
   server.on("/update", handleUpdateTimezone);
   
-  // Start the web server
   server.begin();
 }
 
@@ -189,8 +162,7 @@ void loop(void) {
     }
   }
   
-  
-  // This is used to handle all client requests.
+  // Handle all client requests.
   server.handleClient();
 }
 
@@ -228,3 +200,29 @@ int buttonPressed() {
   if(buttonValue <= powerButton + tolerance && buttonValue >= powerButton - tolerance) return 1;
   if(buttonValue <= modeButton + tolerance && buttonValue >= modeButton - tolerance) return 2;
   if(buttonValue <= startButton + tolerance && button
+
+
+/*** WEB-SERVER ***/
+// Replaces placeholder "TIMEZONE" with the current timezone from the code.
+String processor(const String& var) {
+  if (var == "TIMEZONE") {
+    return String(currentTimezone);
+  }
+  return String();
+}
+
+void handleRoot() {
+  String htmlPage = HTML_PAGE;
+  htmlPage.replace("%TIMEZONE%", currentTimezone);
+  server.send(200, "text/html", htmlPage);
+}
+
+void handleUpdateTimezone() {
+  if (server.hasArg("timezone")) {
+    String newTimezone = server.arg("timezone");
+    newTimezone.toCharArray(currentTimezone, 100);
+    setTimezone(currentTimezone);
+    updateTime();
+  }
+  handleRoot();
+}
