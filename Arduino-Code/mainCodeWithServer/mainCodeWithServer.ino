@@ -112,7 +112,7 @@ void handleRoot() {
 }
 
 // Handle form submission to update timezone
-void handleUpdateTimezon() {
+void handleUpdateTimezone() {
   if (server.hasArg("timezone")) {
     String newTimezone = server.arg("timezone");
     newTimezone.toCharArray(currentTimezone, 50);
