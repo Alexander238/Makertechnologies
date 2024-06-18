@@ -71,7 +71,7 @@ std::map<String, int> lastNumber = {
 };
 float cumulativeDegree = 0;
 long timeLastChecked = 0;
-int timeInterval = 5000;
+int timeInterval = 1000;
 AccelStepper *reversedSteppers[] = { &stepper2 };
 char timeHour[3], timeMinute[3];
 
