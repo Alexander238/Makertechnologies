@@ -571,14 +571,20 @@ void loop(void) {
   int pressedButton = buttonPressed();
 
   if (pressedButton == 1) {
-    digitalWrite(led1, HIGH);
-  } else if (pressedButton == 3) {
-    Serial.print("Current time: ");
-    Serial.print(timeHour);
-    Serial.print(":");
-    Serial.println(timeMinute);
+    // Power-Button
+    ESP.restart();
+  }
+  else if (pressedButton == 2) {
+    // Mode-Button
+    //digitalWrite(led1, HIGH);
+    //digitalWrite(led2, HIGH);
+  } 
+  else if (pressedButton == 3) {
+    // Start-Button
+    //digitalWrite(led1, LOW);
+    //digitalWrite(led2, LOW);
   } else {
-    digitalWrite(led1, LOW);
+    // No button pressed
   }
 
   if (!sensor_1_magnet) {
