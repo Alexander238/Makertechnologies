@@ -558,7 +558,7 @@ void setup(void) {
 
   updateTime();
   
-  // Define two routes
+
   server.on("/", handleRoot);
   server.on("/update", handleUpdateTimezone);
   
