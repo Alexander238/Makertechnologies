@@ -530,10 +530,14 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-// TODO or not: Overflow weil zu hoch gezählt -> vlt. reset einmal am Tag
-// Float Overflow nach 1.960716 x 10^31 Jahre, Int Overflow nach 123.75 Jahre
+/* 
+  Overflow Problem weil zu hoch gezählt?
+  ==> Float Overflow mit unserer Geschwindigkeit nach ca. 1.960716 x 10^31 Jahren 
+  ==> Kein Problem
+*/
 
-// TODO: Stoppuhr, durch Modi auswählbar
+// TODO: Counter, durch Modi auswählbar
+// ==> Doch eher schlecht, Delay beim Zählen
 
 void setup(void) {
   Serial.begin(115200);
@@ -737,6 +741,7 @@ bool isStepperInList(AccelStepper *stepper) {
 }
 
 /*** WEB-SERVER ***/
+
 void handleRoot() {
   updateTime();
   String htmlPage = HTML_PAGE;
@@ -756,6 +761,7 @@ void handleUpdateTimezone() {
   }
   handleRoot();
 }
+
 
 /*** Functions for time ***/
 
@@ -790,6 +796,7 @@ void updateTime() {
   motorNumbers["MinutesRight"] = timeMinute[1] - '0';
 
 }
+
 
 /*** Functions to turn flaps ***/
 
