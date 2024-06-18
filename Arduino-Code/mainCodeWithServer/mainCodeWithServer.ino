@@ -5,8 +5,9 @@
 #include <WebServer.h>
 
 /*** TIME-VARIABLES ***/
-const char *ssid = "WLAN-Kabel Gast";  // FH-Kiel-IoT-NAT
-const char *password = "sandman1998";  // !FH-NAT-001!
+const char* ssid[] = {"WLAN-Kabel Gast", "FH-Kiel-IoT-NAT", "Lucas"};
+const char* password[] = {"sandman1998", "!FH-NAT-001!", "3141592654"};
+int maxAttemptsToConnectToWifi = 10;
 const char *ap_ssid = "Flap Display";  // Access Point SSID
 const char *ap_password = "";       // Access Point Password
 const char *ntpServer = "pool.ntp.org";
@@ -622,17 +623,30 @@ void setupAccessPoint() {
 }
 
 void setupWifi() {
-  /*          TIME SERVER         */
-  // Connect to Wi-Fi
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  int i = 0;  
+  int numberOfNetworks = sizeof(ssid) / sizeof(ssid[0]);
+
+  while(WiFi.status() != WL_CONNECTED && i < numberOfNetworks) {
+    Serial.print("Attempting to connect to ");
+    Serial.println(ssid[i]);
+    WiFi.begin(ssid[i], password[i]);
+    int j = 0;
+    while (WiFi.status() != WL_CONNECTED && j < maxAttemptsToConnectToWifi) {
+      delay(500);
+      Serial.print(".");
+      j++;
+    }
+
+    i++;
   }
-  Serial.println("");
-  Serial.println("WiFi connected.");
+  
+  if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("Connected to WiFi");
+      Serial.print("IP Address: ");
+      Serial.println(WiFi.localIP());
+  } else {
+      Serial.println("Could not connect to any of the specified networks");
+  }
 
   // Init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
