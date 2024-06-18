@@ -700,7 +700,7 @@ void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
     stepper->setCurrentPosition(0);
 
     if (isStepperInList(stepper)) {
-      adjustPosition(stepper, -33);  // turn backwards, if stepper==stepper4
+      adjustPosition(stepper, -33);
     } else if (stepper == &stepper4) {
       adjustPosition(stepper, 30);
     } else {
@@ -709,7 +709,7 @@ void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
   } else {
     // Keep the motor running
     if (isStepperInList(stepper)) {
-      stepper->setSpeed(-speed * 4);  // turn backwards, if stepper==stepper4
+      stepper->setSpeed(-speed * 4);  // turn backwards
     } else {
       stepper->setSpeed(speed * 4);
     }
