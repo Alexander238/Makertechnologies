@@ -699,7 +699,7 @@ void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
     Serial.println("Magnet detected, position set to 0");
     stepper->setCurrentPosition(0);
 
-    if (isStepperInList(stepper)) {
+    if (isStepperInReverseList(stepper)) {
       adjustPosition(stepper, -33);
     } else if (stepper == &stepper4) {
       adjustPosition(stepper, 30);
@@ -708,7 +708,7 @@ void calibrateMotor(AccelStepper *stepper, float *sensor, bool *sensor_magnet) {
     } 
   } else {
     // Keep the motor running
-    if (isStepperInList(stepper)) {
+    if (isStepperInReverseList(stepper)) {
       stepper->setSpeed(-speed * 4);  // turn backwards
     } else {
       stepper->setSpeed(speed * 4);
@@ -731,7 +731,7 @@ void adjustPosition(AccelStepper *stepper, int degreeToAdjustBy) {
   stepper->setCurrentPosition(0);
 }
 
-bool isStepperInList(AccelStepper *stepper) {
+bool isStepperInReverseList(AccelStepper *stepper) {
   for (int i = 0; i < sizeof(reversedSteppers) / sizeof(reversedSteppers[0]); i++) {
     if (stepper == reversedSteppers[i]) {
       return true;
@@ -815,7 +815,7 @@ void rotateToNumber(AccelStepper *stepper, String position) {
     lastDegree[position] = degree;
     lastNumber[position] = number;
 
-    if (isStepperInList(stepper)) {
+    if (isStepperInReverseList(stepper)) {
       stepper->moveTo(-calcStep(degree));  // turn backwards, if stepper==stepper4
     } else {
       stepper->moveTo(calcStep(degree));
@@ -828,7 +828,7 @@ void rotateToNumber(AccelStepper *stepper, String position) {
 }
 
 void rotatingFlaps(AccelStepper *stepper, int speed) {
-  if (isStepperInList(stepper)) {
+  if (isStepperInReverseList(stepper)) {
       stepper->setSpeed(speed);  // turn backwards, if stepper==stepper4
     } else {
       stepper->setSpeed(-speed);
